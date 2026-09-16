@@ -1,6 +1,10 @@
-# Segredos — NUNCA versionar
+# Segredos — NUNCA versionar.
+# A negação vem por ÚLTIMO de propósito: em .gitignore a última regra que casa
+# é a que vale, e `vercel link` acrescenta um `.env*` que, vindo depois,
+# re-ignoraria o exemplo.
 .env
 .env.*
+.env*
 !.env.example
 *.key
 *-key.json

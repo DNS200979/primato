@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MBV CarbonOS · Primato</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Identidade da Primato: campo — verde profundo de lavoura, âmbar de colheita,
+   papel claro. Deliberadamente distinta do painel da CONFAF (escuro/neon):
+   são dois clientes, e confundir as telas é confundir as carteiras. */
+:root{
+  --papel:#f6f7f3; --carta:#ffffff; --tinta:#16211a; --tinta-2:#5d6b60; --fio:#dde3d9;
+  --verde:#1f5c33; --verde-claro:#2f7d46; --verde-fundo:#e8f1e8;
+  --ambar:#b3701a; --ambar-fundo:#fdf3e2;
+  --perigo:#a8372a; --perigo-fundo:#fbeceb;
+  --info:#2c5a86; --info-fundo:#e9f1f8;
+  --sombra:0 1px 2px rgba(22,33,26,.05), 0 4px 16px rgba(22,33,26,.05);
+  --r:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);
+     font:15px/1.55 "Plus Jakarta Sans",system-ui,-apple-system,sans-serif}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;margin:0;text-wrap:balance}
+h1{font-size:1.5rem;line-height:1.15}
+h2{font-size:1.15rem}
+h3{font-size:1rem}
+a{color:var(--verde)}
+button{font:inherit}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.88em}
+.num{font-variant-numeric:tabular-nums}
+
+/* ── Login ───────────────────────────────────────────────────────────────── */
+#gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(160deg,#1f5c33,#16211a);padding:1.5rem;z-index:50}
+.gate-card{background:var(--carta);border-radius:14px;padding:2rem;width:100%;max-width:400px;
+           box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.gate-card img{height:34px;display:block;margin:0 auto .9rem}
+.gate-card h1{text-align:center;font-size:1.3rem}
+.gate-card .sub{text-align:center;color:var(--tinta-2);font-size:.86rem;margin:.3rem 0 1.4rem}
+.gate-tabs{display:flex;gap:.4rem;margin-bottom:1rem}
+.gate-tab{flex:1;padding:.5rem;border:1px solid var(--fio);background:transparent;border-radius:8px;
+          cursor:pointer;color:var(--tinta-2);font-size:.85rem}
+.gate-tab.active{background:var(--verde-fundo);border-color:var(--verde);color:var(--verde);font-weight:600}
+.gate-msg{display:none;margin-top:.8rem;padding:.6rem .75rem;border-radius:8px;font-size:.85rem}
+.gate-msg.show{display:block}
+.gate-msg.err{background:var(--perigo-fundo);color:var(--perigo)}
+.gate-msg.ok{background:var(--verde-fundo);color:var(--verde)}
+
+/* ── Estrutura ───────────────────────────────────────────────────────────── */
+#app{display:none}
+header.topo{background:var(--verde);color:#fff;padding:.7rem 1.2rem;display:flex;
+            align-items:center;gap:1rem;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+header.topo img{height:26px}
+header.topo .marca{font-family:Fraunces,serif;font-weight:600;font-size:1.02rem}
+header.topo .marca small{display:block;font-family:"Plus Jakarta Sans",sans-serif;
+                         font-weight:400;font-size:.68rem;opacity:.8;letter-spacing:.04em}
+header.topo .direita{margin-left:auto;display:flex;align-items:center;gap:.7rem;font-size:.82rem}
+.chip-papel{background:rgba(255,255,255,.16);padding:.2rem .6rem;border-radius:99px;font-size:.74rem}
+nav.abas{background:var(--carta);border-bottom:1px solid var(--fio);padding:0 1.2rem;
+         display:flex;gap:.2rem;overflow-x:auto;position:sticky;top:46px;z-index:19}
+nav.abas button{background:none;border:0;border-bottom:2px solid transparent;padding:.7rem .85rem;
+                cursor:pointer;color:var(--tinta-2);font-size:.88rem;white-space:nowrap}
+nav.abas button.ativa{color:var(--verde);border-bottom-color:var(--verde);font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:1.4rem 1.2rem 4rem}
+.view{display:none}
+.view.ativa{display:block}
+
+/* ── Componentes ─────────────────────────────────────────────────────────── */
+.carta{background:var(--carta);border:1px solid var(--fio);border-radius:var(--r);
+       padding:1rem 1.1rem;box-shadow:var(--sombra)}
+.grade{display:grid;gap:.9rem}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.cabeca{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem}
+.cabeca .acoes{margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap}
+.olho{font-size:.68rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--verde)}
+.dica{color:var(--tinta-2);font-size:.85rem;margin:.25rem 0 0;max-width:70ch}
+
+.kpi{background:var(--carta);border:1px solid var(--fio);border-radius:var(--r);padding:.85rem 1rem}
+.kpi .rot{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--tinta-2)}
+.kpi .val{font-family:Fraunces,serif;font-size:1.65rem;font-weight:600;line-height:1.1;margin-top:.15rem}
+.kpi .pe{font-size:.76rem;color:var(--tinta-2)}
+.kpi.alerta{border-left:3px solid var(--ambar)}
+.kpi.ruim{border-left:3px solid var(--perigo)}
+.kpi.bom{border-left:3px solid var(--verde-claro)}
+
+button.b{background:var(--verde);color:#fff;border:0;border-radius:8px;padding:.5rem .9rem;
+         cursor:pointer;font-size:.86rem;font-weight:600}
+button.b:hover{background:var(--verde-claro)}
+button.b.sec{background:transparent;color:var(--verde);border:1px solid var(--verde)}
+button.b.sec:hover{background:var(--verde-fundo)}
+button.b.perigo{background:var(--perigo)}
+button.b.mini{padding:.3rem .6rem;font-size:.78rem;font-weight:500}
+button.b:disabled{opacity:.5;cursor:not-allowed}
+
+label{display:block;font-size:.78rem;color:var(--tinta-2);margin-bottom:.2rem;font-weight:500}
+input,select,textarea{width:100%;padding:.5rem .65rem;border:1px solid var(--fio);border-radius:8px;
+                      background:var(--carta);color:var(--tinta);font:inherit;font-size:.9rem}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--verde-claro);outline-offset:-1px;border-color:var(--verde)}
+.campo{margin-bottom:.7rem}
+.linha-campos{display:grid;gap:.7rem;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.check{display:flex;align-items:center;gap:.5rem;font-size:.86rem;margin:.4rem 0}
+.check input{width:auto}
+
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+.rolagem{overflow-x:auto}
+th{text-align:left;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta-2);
+   padding:.4rem .6rem .45rem 0;border-bottom:1px solid var(--fio);white-space:nowrap}
+td{padding:.5rem .6rem .5rem 0;border-bottom:1px solid var(--fio);vertical-align:top}
+tr.clicavel{cursor:pointer}
+tr.clicavel:hover td{background:var(--verde-fundo)}
+td.dir,th.dir{text-align:right;padding-right:.9rem}
+
+.selo{display:inline-block;padding:.12rem .5rem;border-radius:99px;font-size:.72rem;font-weight:600;white-space:nowrap}
+.s-em_dia,.s-ok{background:var(--verde-fundo);color:var(--verde)}
+.s-a_vencer,.s-desatualizado,.s-sem_data{background:var(--ambar-fundo);color:var(--ambar)}
+.s-vencido,.s-ausente{background:var(--perigo-fundo);color:var(--perigo)}
+.s-nao_exigido{background:#eef0ec;color:var(--tinta-2)}
+.s-regenerativo{background:var(--verde-fundo);color:var(--verde)}
+.s-convencional{background:#eef0ec;color:var(--tinta-2)}
+.s-transicao{background:var(--info-fundo);color:var(--info)}
+
+.aviso{padding:.65rem .8rem;border-radius:8px;font-size:.84rem;margin:.6rem 0}
+.aviso.at{background:var(--ambar-fundo);color:var(--ambar)}
+.aviso.er{background:var(--perigo-fundo);color:var(--perigo)}
+.aviso.inf{background:var(--info-fundo);color:var(--info)}
+.aviso.ok{background:var(--verde-fundo);color:var(--verde)}
+
+.vazio{text-align:center;padding:2.5rem 1rem;color:var(--tinta-2);font-size:.9rem}
+.carregando{color:var(--tinta-2);font-size:.86rem;padding:1rem 0}
+
+dialog{border:0;border-radius:14px;padding:0;max-width:640px;width:calc(100% - 2rem);
+       box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(22,33,26,.45)}
+dialog .cab{padding:1rem 1.2rem;border-bottom:1px solid var(--fio);display:flex;align-items:center}
+dialog .cab button{margin-left:auto;background:none;border:0;font-size:1.3rem;cursor:pointer;color:var(--tinta-2)}
+dialog .corpo{padding:1.1rem 1.2rem;max-height:70vh;overflow-y:auto}
+dialog .pe{padding:.9rem 1.2rem;border-top:1px solid var(--fio);display:flex;gap:.5rem;justify-content:flex-end}
+
+.barra{height:7px;background:#e6eae3;border-radius:99px;overflow:hidden}
+.barra i{display:block;height:100%;background:var(--verde-claro)}
+.voltar{background:none;border:0;color:var(--verde);cursor:pointer;font-size:.85rem;padding:0;margin-bottom:.5rem}
+.divisor{border:0;border-top:1px solid var(--fio);margin:1.2rem 0}
+.lista-acao{display:flex;gap:.4rem;flex-wrap:wrap}
+@media (max-width:640px){
+  main{padding:1rem .8rem 3rem}
+  nav.abas{top:auto;position:static}
+  header.topo{position:static}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ Login ══════════════════════════════════════════════════════════════ -->
+<div id="gate">
+  <form class="gate-card" onsubmit="submeterLogin(event)">
+    <img src="/assets/mbv-logo.png" alt="MBV">
+    <h1>MBV CarbonOS</h1>
+    <p class="sub">Perfil Regenerativo Digital · Primato</p>
+    <div class="gate-tabs">
+      <button type="button" class="gate-tab active" data-aba="entrar" onclick="trocarAbaLogin('entrar')">Entrar</button>
+      <button type="button" class="gate-tab" data-aba="criar" onclick="trocarAbaLogin('criar')">Criar conta</button>
+    </div>
+    <div class="campo">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" autocomplete="username" required>
+    </div>
+    <div class="campo">
+      <label for="login-senha">Senha</label>
+      <input id="login-senha" type="password" autocomplete="current-password" required minlength="6">
+    </div>
+    <button class="b" id="btn-login-submit" style="width:100%">Entrar</button>
+    <div class="gate-msg" id="msg-login"></div>
+  </form>
+</div>
+
+<!-- ══ Aplicação ══════════════════════════════════════════════════════════ -->
+<div id="app">
+  <header class="topo">
+    <img src="/assets/mbv-logo.png" alt="MBV">
+    <div class="marca">CarbonOS<small>PRIMATO · PERFIL REGENERATIVO DIGITAL</small></div>
+    <div class="direita">
+      <span class="chip-papel" id="chip-papel">—</span>
+      <span id="email-usuario"></span>
+      <button class="b sec" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)"
+              onclick="sair()">Sair</button>
+    </div>
+  </header>
+
+  <nav class="abas" id="abas"></nav>
+
+  <main>
+    <!-- Painel -->
+    <section class="view" id="v-painel">
+      <div class="cabeca">
+        <div>
+          <div class="olho">Visão geral</div>
+          <h1>Painel</h1>
+          <p class="dica">O que precisa de atenção hoje, em toda a carteira.</p>
+        </div>
+      </div>
+      <div class="grade g4" id="kpis"></div>
+      <h2 style="margin:1.6rem 0 .7rem">Documentos vencidos e a vencer</h2>
+      <div class="carta rolagem" id="painel-alertas"><div class="carregando">Carregando…</div></div>
+    </section>
+
+    <!-- Associados -->
+    <section class="view" id="v-associados">
+      <div class="cabeca">
+        <div>
+          <div class="olho">Módulo 1</div>
+          <h1>Associados</h1>
+        </div>
+        <div class="acoes">
+          <input id="busca-associado" placeholder="Buscar por nome…" style="width:220px"
+                 oninput="carregarAssociados()">
+          <button class="b" onclick="abrirNovoAssociado()" data-acao="administrar">Novo associado</button>
+        </div>
+      </div>
+      <div class="carta rolagem" id="lista-associados"><div class="carregando">Carregando…</div></div>
+    </section>
+
+    <!-- Ficha do associado -->
+    <section class="view" id="v-associado">
+      <button class="voltar" onclick="irPara('associados')">← Associados</button>
+      <div id="ficha-associado"></div>
+    </section>
+
+    <!-- Propriedade -->
+    <section class="view" id="v-propriedade">
+      <button class="voltar" onclick="voltarDaPropriedade()">← Voltar</button>
+      <div id="ficha-propriedade"></div>
+    </section>
+
+    <!-- Safras -->
+    <section class="view" id="v-safras">
+      <div class="cabeca">
+        <div>
+          <div class="olho">Módulo 2</div>
+          <h1>Safras</h1>
+          <p class="dica">Produtividade, custo e receita por talhão.</p>
+        </div>
+        <div class="acoes">
+          <select id="filtro-safra" style="width:150px" onchange="carregarSafras()"></select>
+          <select id="filtro-manejo" style="width:170px" onchange="carregarSafras()">
+            <option value="">Todos os manejos</option>
+            <option value="regenerativo">Regenerativo</option>
+            <option value="convencional">Convencional</option>
+            <option value="transicao">Em transição</option>
+          </select>
+        </div>
+      </div>
+      <div class="carta rolagem" id="lista-safras"><div class="carregando">Carregando…</div></div>
+    </section>
+
+    <!-- Detalhe da safra -->
+    <section class="view" id="v-safra">
+      <button class="voltar" onclick="irPara('safras')">← Safras</button>
+      <div id="ficha-safra"></div>
+    </section>
+
+    <!-- Comparativo -->
+    <section class="view" id="v-comparativo">
+      <div class="cabeca">
+        <div>
+          <div class="olho">Piloto de campo</div>
+          <h1>Área controle × área regenerativa</h1>
+          <p class="dica">Só entram safras já colhidas. A comparação é indicativa: talhões
+            diferem em solo, relevo e histórico.</p>
+        </div>
+        <div class="acoes">
+          <select id="comp-safra" style="width:150px" onchange="carregarComparativo()"></select>
+          <select id="comp-cultura" style="width:150px" onchange="carregarComparativo()"></select>
+        </div>
+      </div>
+      <div id="painel-comparativo"><div class="carregando">Carregando…</div></div>
+    </section>
+
+    <!-- Equipe -->
+    <section class="view" id="v-equipe">
+      <div class="cabeca">
+        <div>
+          <div class="olho">Administração</div>
+          <h1>Equipe e perfis</h1>
+          <p class="dica">Quem tem acesso e o que cada perfil alcança.</p>
+        </div>
+        <div class="acoes"><button class="b" onclick="abrirNovoMembro()">Dar acesso</button></div>
+      </div>
+      <div class="carta rolagem" id="lista-membros"><div class="carregando">Carregando…</div></div>
+      <h2 style="margin:1.6rem 0 .7rem">O que cada perfil pode fazer</h2>
+      <div class="carta rolagem" id="matriz-papeis"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="modal">
+  <div class="cab"><h2 id="modal-titulo">—</h2><button onclick="fecharModal()" aria-label="Fechar">×</button></div>
+  <div class="corpo" id="modal-corpo"></div>
+  <div class="pe" id="modal-pe"></div>
+</dialog>
+
+<script>
+/* ===========================================================================
+   MBV CarbonOS · Primato — painel da Fase 1 (Módulos 1 e 2).
+   Sessão PRÓPRIA (chave exclusiva): o Supabase da Primato é dedicado, e a
+   sessão nunca é compartilhada com o painel de outra cooperativa.
+   =========================================================================== */
+const SESSAO_KEY = 'primato_sessao';
+const API = location.origin;
+
+let SESSAO = { token:'', refreshToken:'', usuario:null, expiraEm:0 };
+let SUPA = { url:'', key:'' };
+let EU = null;                 // perfil, escopo e ações do usuário
+let CAT = { documentos:null, culturas:null, custos:null };
+let CTX = { associadoId:null, propriedadeId:null, origemPropriedade:'associados' };
+
+/* ---------- Sessão ---------- */
+function carregarSessao(){ try{ const r = localStorage.getItem(SESSAO_KEY); if(r) SESSAO = Object.assign(SESSAO, JSON.parse(r)); }catch(e){} }
+function salvarSessao(){ try{ localStorage.setItem(SESSAO_KEY, JSON.stringify(SESSAO)); }catch(e){} }
+function limparSessao(){ SESSAO = { token:'', refreshToken:'', usuario:null, expiraEm:0 }; try{ localStorage.removeItem(SESSAO_KEY); }catch(e){} }
+
+async function carregarConfig(){
+  if (SUPA.url && SUPA.key) return true;
+  try{
+    const r = await fetch(`${API}/api/v1/public-config`);
+    if(!r.ok) return false;
+    const c = await r.json();
+    if(!c.supabase_url || !c.supabase_anon_key) return false;
+    SUPA.url = c.supabase_url; SUPA.key = c.supabase_anon_key;
+    return true;
+  }catch(e){ return false; }
+}
+
+async function supaAuth(caminho, corpo){
+  const r = await fetch(`${SUPA.url}/auth/v1/${caminho}`, {
+    method:'POST', headers:{'Content-Type':'application/json','apikey':SUPA.key},
+    body: JSON.stringify(corpo)
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.error || 'Falha na autenticação');
+  return d;
+}
+
+function aplicarSessao(a){
+  SESSAO.token = a.access_token || '';
+  SESSAO.refreshToken = a.refresh_token || '';
+  if (a.user) SESSAO.usuario = { id:a.user.id, email:a.user.email };
+  SESSAO.expiraEm = Date.now() + (Number(a.expires_in || 3600) * 1000);
+  salvarSessao();
+}
+
+async function renovarSessao(){
+  if(!SESSAO.refreshToken) return false;
+  if(!(await carregarConfig())) return false;
+  try{ aplicarSessao(await supaAuth('token?grant_type=refresh_token',{refresh_token:SESSAO.refreshToken})); return true; }
+  catch(e){ return false; }
+}
+
+async function api(path, opts={}, jaRenovou=false){
+  if (SESSAO.token && SESSAO.expiraEm && Date.now() > SESSAO.expiraEm - 60000 && !jaRenovou) await renovarSessao();
+  // FormData precisa que o BROWSER escreva o Content-Type (com o boundary).
+  const multipart = (typeof FormData !== 'undefined') && (opts.body instanceof FormData);
+  const headers = Object.assign(
+    { ...(multipart ? {} : {'Content-Type':'application/json'}),
+      ...(SESSAO.token ? {'Authorization':'Bearer '+SESSAO.token} : {}) }, opts.headers || {});
+  const r = await fetch(API + path, {...opts, headers});
+  if (r.status === 401 && !jaRenovou){
+    if (await renovarSessao()) return api(path, opts, true);
+    exigirLogin('Sessão expirada. Entre novamente.');
+    throw new Error('sessão expirada');
+  }
+  if (!r.ok){
+    let d = '';
+    try { d = (await r.json()).detail || ''; } catch(e){}
+    const e = new Error(typeof d === 'string' && d ? d : `Erro ${r.status}`);
+    e.status = r.status; throw e;
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+/* ---------- Login ---------- */
+let abaLogin = 'entrar';
+function trocarAbaLogin(a){
+  abaLogin = a;
+  document.querySelectorAll('.gate-tab').forEach(b => b.classList.toggle('active', b.dataset.aba === a));
+  document.getElementById('btn-login-submit').textContent = a === 'entrar' ? 'Entrar' : 'Criar conta';
+  document.getElementById('login-senha').setAttribute('autocomplete', a === 'entrar' ? 'current-password' : 'new-password');
+  msgLogin('','');
+}
+function msgLogin(t,k){ const e = document.getElementById('msg-login'); e.textContent = t; e.className = 'gate-msg' + (t ? ' show '+k : ''); }
+function exigirLogin(aviso){
+  limparSessao(); EU = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  if (aviso) msgLogin(aviso, 'err');
+}
+function sair(){ exigirLogin(''); }
+
+async function submeterLogin(ev){
+  ev.preventDefault();
+  const btn = document.getElementById('btn-login-submit');
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  btn.disabled = true; msgLogin('', '');
+  try{
+    if(!(await carregarConfig())) throw new Error('Servidor sem configuração do Supabase.');
+    if (abaLogin === 'criar'){
+      const d = await supaAuth('signup', {email, password:senha});
+      if (!d.access_token){
+        msgLogin('Conta criada. Confirme o e-mail e peça a um gestor da Primato para liberar seu acesso.', 'ok');
+        btn.disabled = false; return;
+      }
+      aplicarSessao(d);
+    } else {
+      aplicarSessao(await supaAuth('token?grant_type=password', {email, password:senha}));
+    }
+    await entrarNaApp();
+  }catch(e){ msgLogin(e.message || 'Não consegui entrar.', 'err'); }
+  finally{ btn.disabled = false; }
+}
+
+/* ---------- Abas por perfil ---------- */
+const ABAS = [
+  {id:'painel',      rotulo:'Painel',      acao:'ler'},
+  {id:'associados',  rotulo:'Associados',  acao:'ler'},
+  {id:'safras',      rotulo:'Safras',      acao:'ler'},
+  {id:'comparativo', rotulo:'Controle × regenerativo', acao:'ler'},
+  {id:'equipe',      rotulo:'Equipe',      acao:'administrar'},
+];
+
+function pode(acao){ return !!(EU && EU.acoes && EU.acoes.includes(acao)); }
+
+function montarAbas(){
+  const nav = document.getElementById('abas');
+  nav.innerHTML = '';
+  ABAS.filter(a => pode(a.acao)).forEach(a => {
+    const b = document.createElement('button');
+    b.textContent = a.rotulo; b.dataset.view = a.id;
+    b.onclick = () => irPara(a.id);
+    nav.appendChild(b);
+  });
+  // Botões marcados com data-acao somem para quem não pode a ação.
+  document.querySelectorAll('[data-acao]').forEach(el => {
+    el.style.display = pode(el.dataset.acao) ? '' : 'none';
+  });
+}
+
+function irPara(view){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('ativa'));
+  const alvo = document.getElementById('v-' + view);
+  if (alvo) alvo.classList.add('ativa');
+  document.querySelectorAll('#abas button').forEach(b => b.classList.toggle('ativa', b.dataset.view === view));
+  window.scrollTo(0,0);
+  const carregador = {painel:carregarPainel, associados:carregarAssociados, safras:carregarSafras,
+                      comparativo:carregarComparativo, equipe:carregarEquipe}[view];
+  if (carregador) carregador();
+}
+
+async function entrarNaApp(){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('email-usuario').textContent = SESSAO.usuario?.email || '';
+  try{ EU = await api('/api/v1/associados/eu'); }
+  catch(e){ EU = null; }
+  if (!EU || !EU.tem_acesso){
+    document.querySelector('main').innerHTML =
+      `<div class="carta"><h2>Acesso ainda não liberado</h2>
+       <p class="dica">${EU?.mensagem || 'Sua conta existe, mas nenhum gestor da Primato liberou o acesso ainda.'}</p>
+       <p class="dica">Peça a um gestor para liberar o e-mail <b>${SESSAO.usuario?.email || ''}</b> na tela de Equipe.</p></div>`;
+    document.getElementById('chip-papel').textContent = 'sem acesso';
+    return;
+  }
+  document.getElementById('chip-papel').textContent = EU.papel_rotulo;
+  montarAbas();
+  carregarCatalogos();
+  irPara('painel');
+}
+
+async function carregarCatalogos(){
+  try{
+    const [docs, cults, custos] = await Promise.all([
+      api('/api/v1/catalogos/documentos'),
+      api('/api/v1/catalogos/culturas'),
+      api('/api/v1/catalogos/custos'),
+    ]);
+    CAT = {documentos:docs, culturas:cults, custos:custos};
+  }catch(e){ /* catálogo indisponível: os formulários avisam na hora de usar */ }
+}
+
+/* ---------- Helpers de formatação ---------- */
+const fmtN = (v, c=2) => (v === null || v === undefined || v === '') ? '—'
+  : Number(v).toLocaleString('pt-BR', {minimumFractionDigits:c, maximumFractionDigits:c});
+const fmtR$ = v => (v === null || v === undefined) ? '—' : 'R$ ' + fmtN(v, 2);
+const fmtHa = v => (v === null || v === undefined) ? '—' : fmtN(v, 2) + ' ha';
+const fmtData = d => { if(!d) return '—'; const [a,m,di] = String(d).slice(0,10).split('-'); return `${di}/${m}/${a}`; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const selo = (chave, texto) => `<span class="selo s-${esc(chave)}">${esc(texto || chave)}</span>`;
+function sinal(v, unidade=''){
+  if (v === null || v === undefined) return '—';
+  const s = v > 0 ? '+' : '';
+  const cor = v > 0 ? 'var(--verde)' : (v < 0 ? 'var(--perigo)' : 'var(--tinta-2)');
+  return `<span style="color:${cor};font-weight:600">${s}${fmtN(v)}${unidade}</span>`;
+}
+function erro(el, e){
+  document.getElementById(el).innerHTML = `<div class="aviso er">${esc(e.message || 'Falha ao carregar.')}</div>`;
+}
+
+/* ---------- Modal ---------- */
+function abrirModal(titulo, corpo, botoes){
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('modal-corpo').innerHTML = corpo;
+  document.getElementById('modal-pe').innerHTML = botoes || '';
+  document.getElementById('modal').showModal();
+}
+function fecharModal(){ document.getElementById('modal').close(); }
+function valor(id){ const e = document.getElementById(id); return e ? e.value.trim() : ''; }
+function numero(id){ const v = valor(id); return v === '' ? null : Number(v); }
+function marcado(id){ const e = document.getElementById(id); return !!(e && e.checked); }
+
+/* ═══ Painel ═══════════════════════════════════════════════════════════════ */
+async function carregarPainel(){
+  const kpis = document.getElementById('kpis');
+  kpis.innerHTML = '<div class="carregando">Carregando…</div>';
+  try{
+    const [venc, props, safras] = await Promise.all([
+      api('/api/v1/propriedades/alertas/vencimentos?janela_dias=90'),
+      api('/api/v1/propriedades'),
+      api('/api/v1/safras'),
+    ]);
+    kpis.innerHTML = [
+      card('Propriedades', props.total, fmtHa(props.area_total_ha) + ' cadastrados', ''),
+      card('Sob protocolo regenerativo', fmtHa(safras.area_regenerativa_ha),
+           safras.area_ha ? Math.round(100*safras.area_regenerativa_ha/safras.area_ha) + '% da área em safra' : 'sem safra lançada', 'bom'),
+      card('Documentos vencidos', venc.vencidos, venc.vencidos ? 'exigem providência' : 'nenhum', venc.vencidos ? 'ruim' : 'bom'),
+      card('Vencem em 90 dias', venc.a_vencer, 'renovação a iniciar', venc.a_vencer ? 'alerta' : ''),
+    ].join('');
+    renderAlertas(venc.alertas);
+  }catch(e){ erro('kpis', e); }
+}
+function card(rot, val, pe, classe){
+  return `<div class="kpi ${classe}"><div class="rot">${esc(rot)}</div>
+          <div class="val num">${esc(val)}</div><div class="pe">${esc(pe)}</div></div>`;
+}
+
+function renderAlertas(alertas){
+  const el = document.getElementById('painel-alertas');
+  if (!alertas || !alertas.length){
+    el.innerHTML = '<div class="vazio">Nenhum documento vencido ou a vencer nos próximos 90 dias.</div>';
+    return;
+  }
+  el.innerHTML = `<table><thead><tr>
+      <th>Documento</th><th>Propriedade</th><th>Vencimento</th><th>Situação</th><th>O que fazer</th>
+    </tr></thead><tbody>${alertas.map(a => `<tr>
+      <td>${esc(a.rotulo)}</td>
+      <td>${esc(a.propriedade || '—')}</td>
+      <td class="num">${fmtData(a.validade)}</td>
+      <td>${selo(a.situacao, a.situacao_rotulo)}</td>
+      <td>${esc(a.acao || '—')}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+/* ═══ Associados ═══════════════════════════════════════════════════════════ */
+async function carregarAssociados(){
+  const el = document.getElementById('lista-associados');
+  const busca = valor('busca-associado');
+  try{
+    const d = await api('/api/v1/associados' + (busca ? `?busca=${encodeURIComponent(busca)}` : ''));
+    if (!d.associados.length){
+      el.innerHTML = '<div class="vazio">Nenhum associado cadastrado ainda.</div>';
+      return;
+    }
+    el.innerHTML = `<table><thead><tr>
+        <th>Nome</th><th>CPF/CNPJ</th><th>Município</th><th>Região</th><th>Situação</th>
+      </tr></thead><tbody>${d.associados.map(a => `<tr class="clicavel" onclick="abrirAssociado(${a.id})">
+        <td><b>${esc(a.nome)}</b></td>
+        <td class="mono">${esc(a.cpf_cnpj || '—')}</td>
+        <td>${esc(a.municipio || '—')}${a.uf ? '/' + esc(a.uf) : ''}</td>
+        <td>${esc(a.regiao || '—')}</td>
+        <td>${selo(a.situacao === 'ativo' ? 'ok' : 'nao_exigido', a.situacao)}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }catch(e){ erro('lista-associados', e); }
+}
+
+async function abrirAssociado(id){
+  CTX.associadoId = id;
+  irPara('associado');
+  const el = document.getElementById('ficha-associado');
+  el.innerHTML = '<div class="carregando">Carregando…</div>';
+  try{
+    const d = await api(`/api/v1/associados/${id}`);
+    const a = d.associado;
+    el.innerHTML = `
+      <div class="cabeca">
+        <div>
+          <div class="olho">Associado</div>
+          <h1>${esc(a.nome)}</h1>
+          <p class="dica">${esc(a.cpf_cnpj || 'sem documento')} · ${esc(a.municipio || '—')}${a.uf ? '/'+esc(a.uf) : ''}
+            ${a.matricula_primato ? ' · matrícula ' + esc(a.matricula_primato) : ''}</p>
+        </div>
+        <div class="acoes">
+          <button class="b" onclick="abrirNovaPropriedade(${id})">Nova propriedade</button>
+        </div>
+      </div>
+      <div class="grade g3" style="margin-bottom:1.2rem">
+        ${card('Propriedades', d.resumo.propriedades, '', '')}
+        ${card('Área total', fmtHa(d.resumo.area_total_ha), '', '')}
+        ${card('Safras registradas', d.resumo.safras_registradas, '', '')}
+      </div>
+      <h2 style="margin:0 0 .7rem">Propriedades</h2>
+      <div class="carta rolagem">${d.propriedades.length ? `<table><thead><tr>
+          <th>Nome</th><th>Município</th><th class="dir">Área</th><th>Posse</th><th>CAR</th>
+        </tr></thead><tbody>${d.propriedades.map(p => `<tr class="clicavel" onclick="abrirPropriedade(${p.id},'associado')">
+          <td><b>${esc(p.nome)}</b></td>
+          <td>${esc(p.municipio || '—')}${p.uf ? '/'+esc(p.uf) : ''}</td>
+          <td class="dir num">${fmtHa(p.area_total_ha)}</td>
+          <td>${esc(p.posse)}</td>
+          <td class="mono">${esc(p.car || '—')}</td>
+        </tr>`).join('')}</tbody></table>`
+        : '<div class="vazio">Nenhuma propriedade cadastrada.</div>'}</div>`;
+  }catch(e){ erro('ficha-associado', e); }
+}
+
+function abrirNovoAssociado(){
+  abrirModal('Novo associado', `
+    <div class="campo"><label for="na-nome">Nome *</label><input id="na-nome" required></div>
+    <div class="linha-campos">
+      <div class="campo"><label for="na-tipo">Tipo</label>
+        <select id="na-tipo"><option value="fisica">Pessoa física</option><option value="juridica">Pessoa jurídica</option></select></div>
+      <div class="campo"><label for="na-doc">CPF ou CNPJ</label><input id="na-doc" inputmode="numeric"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="na-matricula">Matrícula Primato</label><input id="na-matricula"></div>
+      <div class="campo"><label for="na-associacao">Associado desde</label><input id="na-associacao" type="date"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="na-municipio">Município</label><input id="na-municipio"></div>
+      <div class="campo"><label for="na-uf">UF</label><input id="na-uf" maxlength="2" style="text-transform:uppercase"></div>
+      <div class="campo"><label for="na-regiao">Região / unidade</label><input id="na-regiao"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="na-telefone">Telefone</label><input id="na-telefone"></div>
+      <div class="campo"><label for="na-email">E-mail</label><input id="na-email" type="email"></div>
+    </div>
+    <div id="na-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="salvarAssociado()">Cadastrar</button>`);
+}
+
+async function salvarAssociado(){
+  const corpo = {
+    nome: valor('na-nome'), tipo_pessoa: valor('na-tipo'),
+    cpf_cnpj: valor('na-doc') || null, matricula_primato: valor('na-matricula') || null,
+    data_associacao: valor('na-associacao') || null,
+    municipio: valor('na-municipio') || null, uf: valor('na-uf').toUpperCase() || null,
+    regiao: valor('na-regiao') || null, telefone: valor('na-telefone') || null,
+    email: valor('na-email') || null,
+  };
+  if (!corpo.nome){ document.getElementById('na-msg').innerHTML = '<div class="aviso er">Informe o nome.</div>'; return; }
+  try{
+    await api('/api/v1/associados', {method:'POST', body: JSON.stringify(corpo)});
+    fecharModal(); carregarAssociados();
+  }catch(e){ document.getElementById('na-msg').innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+/* ═══ Propriedades ═════════════════════════════════════════════════════════ */
+function abrirNovaPropriedade(associadoId){
+  abrirModal('Nova propriedade', `
+    <div class="campo"><label for="np-nome">Nome da propriedade *</label><input id="np-nome" required></div>
+    <div class="linha-campos">
+      <div class="campo"><label for="np-matricula">Matrícula</label><input id="np-matricula"></div>
+      <div class="campo"><label for="np-car">CAR / SICAR</label><input id="np-car"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="np-ccir">CCIR</label><input id="np-ccir"></div>
+      <div class="campo"><label for="np-nirf">NIRF (ITR)</label><input id="np-nirf"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="np-municipio">Município</label><input id="np-municipio"></div>
+      <div class="campo"><label for="np-uf">UF</label><input id="np-uf" maxlength="2" style="text-transform:uppercase"></div>
+      <div class="campo"><label for="np-posse">Posse</label>
+        <select id="np-posse">
+          <option value="propria">Própria</option><option value="arrendada">Arrendada</option>
+          <option value="parceria">Parceria</option><option value="sociedade">Sociedade</option>
+          <option value="comodato">Comodato</option>
+        </select></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="np-area">Área total (ha) *</label><input id="np-area" type="number" step="0.0001" min="0.0001"></div>
+      <div class="campo"><label for="np-rl">Reserva Legal (ha)</label><input id="np-rl" type="number" step="0.0001" min="0"></div>
+      <div class="campo"><label for="np-app">APP (ha)</label><input id="np-app" type="number" step="0.0001" min="0"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="np-agua"> Há captação de água (irrigação, poço, açude)</label>
+    <label class="check"><input type="checkbox" id="np-licenca"> A atividade exige licenciamento ambiental</label>
+    <p class="dica">Estas duas respostas definem se outorga e licença serão cobradas no checklist.</p>
+    <div id="np-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="salvarPropriedade(${associadoId})">Cadastrar</button>`);
+}
+
+async function salvarPropriedade(associadoId){
+  const corpo = {
+    associado_id: associadoId, nome: valor('np-nome'),
+    matricula: valor('np-matricula') || null, car: valor('np-car') || null,
+    ccir: valor('np-ccir') || null, nirf: valor('np-nirf') || null,
+    municipio: valor('np-municipio') || null, uf: valor('np-uf').toUpperCase() || null,
+    posse: valor('np-posse'), area_total_ha: numero('np-area'),
+    area_reserva_legal_ha: numero('np-rl'), area_app_ha: numero('np-app'),
+    possui_captacao_agua: marcado('np-agua'), exige_licenciamento: marcado('np-licenca'),
+  };
+  if (!corpo.nome || !corpo.area_total_ha){
+    document.getElementById('np-msg').innerHTML = '<div class="aviso er">Informe o nome e a área total.</div>'; return;
+  }
+  try{
+    const nova = await api('/api/v1/propriedades', {method:'POST', body: JSON.stringify(corpo)});
+    fecharModal(); abrirPropriedade(nova.id, 'associado');
+  }catch(e){ document.getElementById('np-msg').innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+function voltarDaPropriedade(){
+  if (CTX.origemPropriedade === 'associado' && CTX.associadoId) abrirAssociado(CTX.associadoId);
+  else irPara('associados');
+}
+
+async function abrirPropriedade(id, origem){
+  CTX.propriedadeId = id; CTX.origemPropriedade = origem || 'associados';
+  irPara('propriedade');
+  const el = document.getElementById('ficha-propriedade');
+  el.innerHTML = '<div class="carregando">Carregando…</div>';
+  try{
+    const d = await api(`/api/v1/propriedades/${id}`);
+    const p = d.propriedade, ck = d.checklist;
+    CTX.associadoId = p.associado_id;
+    el.innerHTML = `
+      <div class="cabeca">
+        <div>
+          <div class="olho">${esc(d.associado?.nome || 'Propriedade')}</div>
+          <h1>${esc(p.nome)}</h1>
+          <p class="dica">${esc(p.municipio || '—')}${p.uf ? '/'+esc(p.uf) : ''} ·
+            ${fmtHa(p.area_total_ha)} · posse ${esc(p.posse)}${p.car ? ' · CAR ' + esc(p.car) : ''}</p>
+        </div>
+        <div class="acoes">
+          <button class="b sec" onclick="enviarGeometria(${id})">Enviar polígono</button>
+          <button class="b sec" onclick="cruzarBases(${id})">Cruzar com bases públicas</button>
+          <button class="b" onclick="abrirNovoTalhao(${id})">Novo talhão</button>
+        </div>
+      </div>
+
+      <div class="grade g4" style="margin-bottom:1.2rem">
+        ${card('Regularidade', ck.regularidade_pct + '%', `${ck.contagem.em_dia} de ${ck.contagem.exigidos} em dia`,
+               ck.regular ? 'bom' : 'ruim')}
+        ${card('Talhões', d.resumo.talhoes, fmtHa(d.resumo.area_talhoes_ha), '')}
+        ${card('Área regenerativa', fmtHa(d.resumo.area_regenerativa_ha),
+               d.resumo.area_regenerativa_pct !== null ? d.resumo.area_regenerativa_pct + '% dos talhões' : '', 'bom')}
+        ${card('Polígono', p.geometria_area_ha ? fmtHa(p.geometria_area_ha) : 'não enviado',
+               p.geometria_origem ? esc(p.geometria_origem) : '', p.geometria_area_ha ? '' : 'alerta')}
+      </div>
+
+      ${ck.alertas.length ? `<div class="carta" style="margin-bottom:1.2rem">
+        <h2 style="margin-bottom:.6rem">Pendências documentais</h2>
+        ${ck.alertas.map(a => `<div class="aviso ${a.situacao === 'vencido' || a.situacao === 'ausente' ? 'er' : 'at'}">
+          <b>${esc(a.rotulo)}</b> — ${esc(a.acao || a.situacao_rotulo)}</div>`).join('')}
+      </div>` : '<div class="aviso ok" style="margin-bottom:1.2rem">Documentação em dia.</div>'}
+
+      <h2 style="margin:0 0 .7rem">Talhões</h2>
+      <div class="carta rolagem" style="margin-bottom:1.4rem">${d.talhoes.length ? `<table><thead><tr>
+          <th>Talhão</th><th class="dir">Área</th><th>Manejo</th><th>Solo</th><th>Polígono</th><th></th>
+        </tr></thead><tbody>${d.talhoes.map(t => `<tr>
+          <td><b>${esc(t.nome)}</b></td>
+          <td class="dir num">${fmtHa(t.area_ha)}</td>
+          <td>${selo(t.manejo, {convencional:'Convencional', regenerativo:'Regenerativo', transicao:'Em transição'}[t.manejo] || t.manejo)}</td>
+          <td>${esc(t.tipo_solo || '—')}</td>
+          <td>${t.geometria_area_ha ? fmtHa(t.geometria_area_ha) : '—'}</td>
+          <td class="lista-acao">
+            <button class="b mini sec" onclick="abrirNovaSafra(${t.id}, '${esc(t.nome)}')">Abrir safra</button>
+          </td>
+        </tr>`).join('')}</tbody></table>`
+        : '<div class="vazio">Nenhum talhão cadastrado. O talhão é o que carrega cultura, manejo e emissão.</div>'}</div>
+
+      <h2 style="margin:0 0 .7rem">Documentos</h2>
+      <div class="carta">
+        <div style="margin-bottom:.8rem"><button class="b sec" onclick="abrirEnvioDocumento(${id})">Enviar documento</button></div>
+        <div class="rolagem">${renderChecklist(ck, d.documentos)}</div>
+      </div>
+
+      ${p.cruzamentos ? renderCruzamentos(p.cruzamentos, p.cruzamentos_em) : ''}`;
+  }catch(e){ erro('ficha-propriedade', e); }
+}
+
+function renderChecklist(ck, documentos){
+  const porTipo = {};
+  (documentos || []).forEach(d => { if(!porTipo[d.tipo]) porTipo[d.tipo] = d; });
+  const itens = ck.itens.filter(i => i.situacao !== 'nao_exigido' || porTipo[i.tipo]);
+  if (!itens.length) return '<div class="vazio">Nada a exibir.</div>';
+  return `<table><thead><tr>
+      <th>Documento</th><th>Situação</th><th>Validade / exercício</th><th>Arquivo</th><th></th>
+    </tr></thead><tbody>${itens.map(i => {
+      const doc = porTipo[i.tipo];
+      return `<tr>
+        <td><b>${esc(i.rotulo)}</b>${i.acao ? `<div class="dica" style="font-size:.78rem">${esc(i.acao)}</div>` : ''}</td>
+        <td>${selo(i.situacao, i.situacao_rotulo)}</td>
+        <td class="num">${i.validade ? fmtData(i.validade) : (i.exercicio || '—')}</td>
+        <td>${doc ? esc(doc.nome_arquivo || 'arquivo') : '—'}</td>
+        <td class="lista-acao">${doc ? `<button class="b mini sec" onclick="baixarDocumento(${doc.id})">Abrir</button>` : ''}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function renderCruzamentos(c, em){
+  if (!c || c.disponivel === false)
+    return `<div class="aviso at" style="margin-top:1.2rem">${esc(c?.motivo || 'Cruzamento indisponível.')}</div>`;
+  const bases = c.bases || {};
+  const linhas = Object.keys(bases).map(k => {
+    const b = bases[k];
+    if (b.consultado === false)
+      return `<tr><td><b>${esc(b.rotulo || k)}</b></td>
+              <td>${selo('sem_data','Não consultada')}</td>
+              <td>${esc(b.motivo || 'O órgão não respondeu. Tente de novo mais tarde.')}</td></tr>`;
+    const n = (b.ocorrencias || []).length;
+    return `<tr><td><b>${esc(b.rotulo || k)}</b></td>
+            <td>${selo(n ? 'a_vencer' : 'em_dia', n ? `${n} ocorrência${n>1?'s':''}` : 'Nada encontrado')}</td>
+            <td>${n ? esc((b.ocorrencias[0].descricao || b.ocorrencias[0].nome || '')) : '—'}</td></tr>`;
+  }).join('');
+  return `<h2 style="margin:1.4rem 0 .7rem">Cruzamento com bases públicas</h2>
+    <div class="carta rolagem">
+      <table><thead><tr><th>Base</th><th>Resultado</th><th>Detalhe</th></tr></thead><tbody>${linhas}</tbody></table>
+      <p class="dica" style="margin-top:.7rem">Consulta de ${fmtData(em)}.
+        “Não consultada” significa que o órgão não respondeu — nunca que está tudo certo.</p>
+    </div>`;
+}
+
+async function cruzarBases(id){
+  const el = document.getElementById('ficha-propriedade');
+  const aviso = document.createElement('div');
+  aviso.className = 'aviso inf'; aviso.textContent = 'Consultando SIGEF, FUNAI, unidades de conservação, ANM e embargos…';
+  el.prepend(aviso);
+  try{ await api(`/api/v1/propriedades/${id}/cruzamentos`, {method:'POST'}); abrirPropriedade(id, CTX.origemPropriedade); }
+  catch(e){ aviso.className = 'aviso er'; aviso.textContent = e.message; }
+}
+
+function enviarGeometria(id){
+  abrirModal('Polígono da propriedade', `
+    <p class="dica">Aceita KML ou shapefile em .zip — é o arquivo que a consulta pública do
+      SICAR deixa baixar. Até 4 MB.</p>
+    <div class="campo"><label for="geo-arquivo">Arquivo</label><input id="geo-arquivo" type="file" accept=".kml,.zip"></div>
+    <div id="geo-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="submeterGeometria(${id})">Enviar</button>`);
+}
+
+async function submeterGeometria(id){
+  const f = document.getElementById('geo-arquivo').files[0];
+  const msg = document.getElementById('geo-msg');
+  if (!f){ msg.innerHTML = '<div class="aviso er">Escolha um arquivo.</div>'; return; }
+  const fd = new FormData(); fd.append('arquivo', f);
+  msg.innerHTML = '<div class="aviso inf">Lendo o polígono…</div>';
+  try{
+    const r = await api(`/api/v1/propriedades/${id}/geometria`, {method:'POST', body: fd});
+    fecharModal();
+    abrirPropriedade(id, CTX.origemPropriedade);
+    if (r.divergencia) setTimeout(() => alert(r.divergencia), 300);
+  }catch(e){ msg.innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+/* ---------- Talhões ---------- */
+function abrirNovoTalhao(propriedadeId){
+  abrirModal('Novo talhão', `
+    <div class="linha-campos">
+      <div class="campo"><label for="nt-nome">Nome *</label><input id="nt-nome" placeholder="Ex.: Talhão 3"></div>
+      <div class="campo"><label for="nt-area">Área (ha) *</label><input id="nt-area" type="number" step="0.0001" min="0.0001"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="nt-manejo">Manejo</label>
+        <select id="nt-manejo">
+          <option value="convencional">Convencional (área controle)</option>
+          <option value="regenerativo">Protocolo Primato Regenerativa</option>
+          <option value="transicao">Em transição</option>
+        </select></div>
+      <div class="campo"><label for="nt-solo">Tipo de solo</label><input id="nt-solo"></div>
+    </div>
+    <div class="campo"><label for="nt-obs">Observação</label><textarea id="nt-obs" rows="2"></textarea></div>
+    <div id="nt-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="salvarTalhao(${propriedadeId})">Cadastrar</button>`);
+}
+
+async function salvarTalhao(propriedadeId){
+  const corpo = {nome: valor('nt-nome'), area_ha: numero('nt-area'), manejo: valor('nt-manejo'),
+                 tipo_solo: valor('nt-solo') || null, observacao: valor('nt-obs') || null};
+  if (!corpo.nome || !corpo.area_ha){
+    document.getElementById('nt-msg').innerHTML = '<div class="aviso er">Informe o nome e a área.</div>'; return;
+  }
+  try{
+    await api(`/api/v1/propriedades/${propriedadeId}/talhoes`, {method:'POST', body: JSON.stringify(corpo)});
+    fecharModal(); abrirPropriedade(propriedadeId, CTX.origemPropriedade);
+  }catch(e){ document.getElementById('nt-msg').innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+/* ---------- Documentos ---------- */
+function abrirEnvioDocumento(propriedadeId){
+  const tipos = (CAT.documentos?.documentos || []);
+  if (!tipos.length){ abrirModal('Enviar documento', '<div class="aviso er">Catálogo de documentos indisponível.</div>', ''); return; }
+  const opcoes = tipos.map(t => `<option value="${esc(t.tipo)}" data-vence="${t.vence}" data-periodico="${t.periodico}">${esc(t.rotulo)}</option>`).join('');
+  abrirModal('Enviar documento', `
+    <div class="campo"><label for="nd-tipo">Tipo *</label><select id="nd-tipo" onchange="ajustarCamposDocumento()">${opcoes}</select></div>
+    <div class="campo"><label for="nd-arquivo">Arquivo (PDF ou foto, até 4 MB) *</label>
+      <input id="nd-arquivo" type="file" accept=".pdf,image/*,.xlsx,.xls,.csv"></div>
+    <div class="linha-campos">
+      <div class="campo"><label for="nd-numero">Número</label><input id="nd-numero"></div>
+      <div class="campo"><label for="nd-orgao">Órgão emissor</label><input id="nd-orgao"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="nd-emissao">Emissão</label><input id="nd-emissao" type="date"></div>
+      <div class="campo" id="campo-validade"><label for="nd-validade">Validade</label><input id="nd-validade" type="date"></div>
+      <div class="campo" id="campo-exercicio"><label for="nd-exercicio">Exercício</label><input id="nd-exercicio" type="number" min="1990" max="2100"></div>
+    </div>
+    <p class="dica" id="nd-dica"></p>
+    <div id="nd-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="submeterDocumento(${propriedadeId})">Enviar</button>`);
+  ajustarCamposDocumento();
+}
+
+function ajustarCamposDocumento(){
+  const sel = document.getElementById('nd-tipo');
+  const op = sel.options[sel.selectedIndex];
+  const vence = op.dataset.vence === 'true', periodico = op.dataset.periodico === 'true';
+  document.getElementById('campo-validade').style.display = vence ? '' : 'none';
+  document.getElementById('campo-exercicio').style.display = periodico ? '' : 'none';
+  const meta = (CAT.documentos?.documentos || []).find(t => t.tipo === sel.value);
+  document.getElementById('nd-dica').textContent =
+    (vence ? `A data de validade é obrigatória: sem ela o documento nunca entra no alerta (aviso ${meta?.alerta_dias || 60} dias antes). ` : '')
+    + (meta?.nota || '');
+}
+
+async function submeterDocumento(propriedadeId){
+  const f = document.getElementById('nd-arquivo').files[0];
+  const msg = document.getElementById('nd-msg');
+  if (!f){ msg.innerHTML = '<div class="aviso er">Escolha o arquivo.</div>'; return; }
+  const fd = new FormData();
+  fd.append('tipo', valor('nd-tipo')); fd.append('arquivo', f);
+  ['numero','orgao','emissao','validade'].forEach(c => { const v = valor('nd-'+c); if (v) fd.append(c, v); });
+  const ex = valor('nd-exercicio'); if (ex) fd.append('exercicio', ex);
+  msg.innerHTML = '<div class="aviso inf">Enviando…</div>';
+  try{
+    await api(`/api/v1/propriedades/${propriedadeId}/documentos`, {method:'POST', body: fd});
+    fecharModal(); abrirPropriedade(propriedadeId, CTX.origemPropriedade);
+  }catch(e){ msg.innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+async function baixarDocumento(id){
+  try{
+    const r = await api(`/api/v1/propriedades/documentos/${id}/url`);
+    if (r.url) window.open(r.url, '_blank', 'noopener');
+  }catch(e){ alert(e.message); }
+}
+
+/* ═══ Safras ═══════════════════════════════════════════════════════════════ */
+function safrasDisponiveis(atual){
+  // Rótulos de safra dos últimos anos + a corrente, para os filtros.
+  const ano = new Date().getFullYear();
+  const lista = [];
+  for (let a = ano + 1; a >= ano - 5; a--) lista.push(`${a-1}/${a}`);
+  return lista;
+}
+
+function preencherFiltrosSafra(){
+  ['filtro-safra','comp-safra'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.options.length) return;
+    el.innerHTML = '<option value="">Todas as safras</option>' +
+      safrasDisponiveis().map(s => `<option value="${s}">${s}</option>`).join('');
+  });
+  const c = document.getElementById('comp-cultura');
+  if (c && !c.options.length){
+    c.innerHTML = '<option value="">Todas as culturas</option>' +
+      (CAT.culturas?.culturas || []).map(x => `<option value="${esc(x.chave)}">${esc(x.rotulo)}</option>`).join('');
+  }
+}
+
+async function carregarSafras(){
+  preencherFiltrosSafra();
+  const el = document.getElementById('lista-safras');
+  const q = new URLSearchParams();
+  if (valor('filtro-safra')) q.set('safra', valor('filtro-safra'));
+  if (valor('filtro-manejo')) q.set('manejo', valor('filtro-manejo'));
+  try{
+    const d = await api('/api/v1/safras' + (q.toString() ? '?'+q : ''));
+    if (!d.safras.length){
+      el.innerHTML = '<div class="vazio">Nenhuma safra lançada. Abra a safra a partir de um talhão.</div>';
+      return;
+    }
+    el.innerHTML = `<table><thead><tr>
+        <th>Safra</th><th>Cultura</th><th class="dir">Área</th><th>Manejo</th><th>Situação</th><th class="dir">Produção</th>
+      </tr></thead><tbody>${d.safras.map(s => `<tr class="clicavel" onclick="abrirSafra(${s.id})">
+        <td class="num">${esc(s.safra)}</td>
+        <td><b>${esc(s.cultura)}</b>${s.variedade ? ' · ' + esc(s.variedade) : ''}</td>
+        <td class="dir num">${fmtHa(s.area_ha)}</td>
+        <td>${selo(s.manejo, {convencional:'Convencional', regenerativo:'Regenerativo', transicao:'Transição'}[s.manejo] || s.manejo)}</td>
+        <td>${selo(s.situacao === 'colhida' ? 'ok' : 'nao_exigido', s.situacao)}</td>
+        <td class="dir num">${s.producao_kg ? fmtN(s.producao_kg,0) + ' kg' : '—'}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }catch(e){ erro('lista-safras', e); }
+}
+
+function abrirNovaSafra(talhaoId, nomeTalhao){
+  const culturas = (CAT.culturas?.culturas || []).map(c => `<option value="${esc(c.chave)}">${esc(c.rotulo)}</option>`).join('');
+  abrirModal(`Abrir safra · ${nomeTalhao}`, `
+    <div class="linha-campos">
+      <div class="campo"><label for="ns-safra">Safra *</label>
+        <select id="ns-safra">${safrasDisponiveis().map(s => `<option>${s}</option>`).join('')}</select></div>
+      <div class="campo"><label for="ns-ciclo">Ciclo</label>
+        <select id="ns-ciclo"><option value="principal">Principal</option><option value="segunda">Segunda safra</option>
+          <option value="terceira">Terceira safra</option><option value="inverno">Inverno</option></select></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="ns-cultura">Cultura *</label><select id="ns-cultura">${culturas}</select></div>
+      <div class="campo"><label for="ns-variedade">Variedade</label><input id="ns-variedade"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="ns-area">Área plantada (ha)</label><input id="ns-area" type="number" step="0.0001" min="0"></div>
+      <div class="campo"><label for="ns-plantio">Plantio</label><input id="ns-plantio" type="date"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="ns-esperada">Produtividade esperada (sc/ha)</label><input id="ns-esperada" type="number" step="0.01" min="0"></div>
+      <div class="campo"><label for="ns-preco">Preço esperado (R$/saca)</label><input id="ns-preco" type="number" step="0.01" min="0"></div>
+    </div>
+    <p class="dica">Vazia, a área plantada assume a área do talhão. O manejo vem do talhão.</p>
+    <div id="ns-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="salvarSafra(${talhaoId})">Abrir safra</button>`);
+}
+
+async function salvarSafra(talhaoId){
+  const corpo = {talhao_id: talhaoId, safra: valor('ns-safra'), ciclo: valor('ns-ciclo'),
+    cultura: valor('ns-cultura'), variedade: valor('ns-variedade') || null,
+    area_ha: numero('ns-area'), data_plantio: valor('ns-plantio') || null,
+    produtividade_esperada_sacas_ha: numero('ns-esperada'), preco_esperado_saca: numero('ns-preco')};
+  try{
+    const nova = await api('/api/v1/safras', {method:'POST', body: JSON.stringify(corpo)});
+    fecharModal(); abrirSafra(nova.id);
+  }catch(e){ document.getElementById('ns-msg').innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+async function abrirSafra(id){
+  irPara('safra');
+  const el = document.getElementById('ficha-safra');
+  el.innerHTML = '<div class="carregando">Carregando…</div>';
+  try{
+    const d = await api(`/api/v1/safras/${id}`);
+    const s = d.safra, r = d.resultado, p = r.produtividade, c = d.comparacoes;
+    el.innerHTML = `
+      <div class="cabeca">
+        <div>
+          <div class="olho">Safra ${esc(s.safra)} · ${esc(r.manejo_rotulo)}</div>
+          <h1>${esc(r.cultura_rotulo)}${s.variedade ? ' · ' + esc(s.variedade) : ''}</h1>
+          <p class="dica">${fmtHa(s.area_ha)} · ${esc(s.situacao)}</p>
+        </div>
+        <div class="acoes">
+          <button class="b sec" onclick="abrirLancamento(${id})">Lançar custo</button>
+          <button class="b" onclick="abrirColheita(${id})">Registrar colheita</button>
+        </div>
+      </div>
+
+      <div class="grade g4" style="margin-bottom:1rem">
+        ${card('Produtividade', p.disponivel ? fmtN(p.sacas_ha) + ' sc/ha' : '—',
+               p.disponivel ? fmtN(p.kg_ha,0) + ' kg/ha' : 'aguarda colheita', p.disponivel ? 'bom' : '')}
+        ${card('Custo por hectare', fmtR$(r.custo_ha), `${r.custos.itens} lançamento(s)`, '')}
+        ${card('Custo por saca', fmtR$(r.custo_saca), r.custo_saca_indisponivel || 'preço de equilíbrio', '')}
+        ${card('Margem por hectare', fmtR$(r.margem_ha),
+               r.margem_pct !== null ? fmtN(r.margem_pct,1) + '% da receita' : 'aguarda preço', r.margem_ha > 0 ? 'bom' : (r.margem_ha < 0 ? 'ruim' : ''))}
+      </div>
+
+      ${r.avisos.map(a => `<div class="aviso at">${esc(a)}</div>`).join('')}
+
+      <div class="grade g2" style="margin-top:1.2rem">
+        <div class="carta">
+          <h2 style="margin-bottom:.6rem">Receita</h2>
+          <table><tbody>
+            <tr><td>Esperada (na entrada da safra)</td><td class="dir num">${fmtR$(r.receita_esperada)}</td></tr>
+            <tr><td>Realizada (na comercialização)</td><td class="dir num">${fmtR$(r.receita_realizada)}</td></tr>
+            <tr><td><b>Margem</b></td><td class="dir num"><b>${fmtR$(r.margem)}</b></td></tr>
+            <tr><td>Preço de equilíbrio</td><td class="dir num">${fmtR$(r.preco_equilibrio_saca)}/sc</td></tr>
+          </tbody></table>
+          <p class="dica">O preço de equilíbrio é a que preço a safra se paga — é com ele que se decide travar venda.</p>
+        </div>
+        <div class="carta">
+          <h2 style="margin-bottom:.6rem">Comparações</h2>
+          <table><tbody>
+            <tr><td>vs. ${esc(c.vs_referencia.rotulo)}</td>
+                <td class="dir num">${c.vs_referencia.disponivel ? sinal(c.vs_referencia.diferenca, ' sc/ha') : '<span class="dica">sem referência cadastrada</span>'}</td></tr>
+            ${c.vs_safra_anterior ? `<tr><td>vs. safra anterior (${esc(d.safra_anterior?.safra || '')})</td>
+                <td class="dir num">${c.vs_safra_anterior.disponivel ? sinal(c.vs_safra_anterior.diferenca, ' sc/ha') : '—'}</td></tr>
+            <tr><td>Custo/ha vs. anterior</td><td class="dir num">${c.custo_ha_vs_safra_anterior?.disponivel ? sinal(c.custo_ha_vs_safra_anterior.diferenca, ' R$') : '—'}</td></tr>
+            <tr><td>Margem/ha vs. anterior</td><td class="dir num">${c.margem_ha_vs_safra_anterior?.disponivel ? sinal(c.margem_ha_vs_safra_anterior.diferenca, ' R$') : '—'}</td></tr>`
+            : '<tr><td colspan="2" class="dica">Primeira safra desta cultura neste talhão.</td></tr>'}
+          </tbody></table>
+        </div>
+      </div>
+
+      <h2 style="margin:1.4rem 0 .7rem">Custos e insumos</h2>
+      <div class="carta rolagem">${d.lancamentos.length ? `<table><thead><tr>
+          <th>Categoria</th><th>Produto</th><th class="dir">Quantidade</th><th class="dir">Valor</th><th>Fornecedor</th><th>Rede Primato</th><th></th>
+        </tr></thead><tbody>${d.lancamentos.map(l => `<tr>
+          <td>${esc(r.custos.rotulos[l.categoria] || l.categoria)}</td>
+          <td>${esc(l.produto || l.descricao || '—')}</td>
+          <td class="dir num">${l.quantidade ? fmtN(l.quantidade) + ' ' + esc(l.unidade || '') : '—'}</td>
+          <td class="dir num">${fmtR$(l.valor)}</td>
+          <td>${esc(l.fornecedor || '—')}</td>
+          <td>${l.da_cooperativa ? selo('ok','Sim') : '—'}</td>
+          <td><button class="b mini sec" onclick="removerLancamento(${l.id}, ${id})">Remover</button></td>
+        </tr>`).join('')}
+        <tr><td colspan="3"><b>Total</b></td><td class="dir num"><b>${fmtR$(r.custos.total)}</b></td>
+            <td colspan="3">${r.custos.via_cooperativa_pct !== null ? fmtN(r.custos.via_cooperativa_pct,1) + '% comprado na rede Primato' : ''}</td></tr>
+        </tbody></table>` : '<div class="vazio">Nenhum custo lançado.</div>'}</div>`;
+  }catch(e){ erro('ficha-safra', e); }
+}
+
+function abrirLancamento(safraId){
+  const cats = CAT.custos?.categorias || {};
+  abrirModal('Lançar custo ou insumo', `
+    <div class="linha-campos">
+      <div class="campo"><label for="nl-cat">Categoria *</label>
+        <select id="nl-cat">${Object.keys(cats).map(k => `<option value="${esc(k)}">${esc(cats[k])}</option>`).join('')}</select></div>
+      <div class="campo"><label for="nl-valor">Valor (R$) *</label><input id="nl-valor" type="number" step="0.01" min="0"></div>
+    </div>
+    <div class="campo"><label for="nl-produto">Produto</label><input id="nl-produto" placeholder="Ex.: CoinMax, ureia, calcário dolomítico"></div>
+    <div class="linha-campos">
+      <div class="campo"><label for="nl-qtd">Quantidade</label><input id="nl-qtd" type="number" step="0.0001" min="0"></div>
+      <div class="campo"><label for="nl-un">Unidade</label>
+        <select id="nl-un"><option value="">—</option><option>kg</option><option>t</option><option>L</option><option>sc</option><option>h</option><option>un</option></select></div>
+      <div class="campo"><label for="nl-data">Data</label><input id="nl-data" type="date"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="nl-forn">Fornecedor</label><input id="nl-forn"></div>
+      <div class="campo"><label for="nl-nf">Nota fiscal</label><input id="nl-nf"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="nl-coop"> Comprado na rede Primato</label>
+    <p class="dica">Em fertilizante e calcário, informe a quantidade: é ela que alimenta o
+      cálculo de emissões — o valor em reais, não.</p>
+    <div id="nl-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="salvarLancamento(${safraId})">Lançar</button>`);
+}
+
+async function salvarLancamento(safraId){
+  const corpo = {categoria: valor('nl-cat'), valor: numero('nl-valor'),
+    produto: valor('nl-produto') || null, quantidade: numero('nl-qtd'),
+    unidade: valor('nl-un') || null, data: valor('nl-data') || null,
+    fornecedor: valor('nl-forn') || null, nota_fiscal: valor('nl-nf') || null,
+    da_cooperativa: marcado('nl-coop')};
+  if (corpo.valor === null){
+    document.getElementById('nl-msg').innerHTML = '<div class="aviso er">Informe o valor.</div>'; return;
+  }
+  try{
+    const r = await api(`/api/v1/safras/${safraId}/lancamentos`, {method:'POST', body: JSON.stringify(corpo)});
+    fecharModal();
+    abrirSafra(safraId);
+    if (r.aviso) setTimeout(() => alert(r.aviso), 300);
+  }catch(e){ document.getElementById('nl-msg').innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+async function removerLancamento(id, safraId){
+  if (!confirm('Remover este lançamento?')) return;
+  try{ await api(`/api/v1/safras/lancamentos/${id}`, {method:'DELETE'}); abrirSafra(safraId); }
+  catch(e){ alert(e.message); }
+}
+
+function abrirColheita(safraId){
+  abrirModal('Registrar colheita', `
+    <div class="linha-campos">
+      <div class="campo"><label for="nc-producao">Produção colhida (kg) *</label><input id="nc-producao" type="number" step="0.01" min="0"></div>
+      <div class="campo"><label for="nc-umidade">Umidade (%)</label><input id="nc-umidade" type="number" step="0.1" min="0" max="99"></div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo"><label for="nc-colheita">Data da colheita</label><input id="nc-colheita" type="date"></div>
+      <div class="campo"><label for="nc-preco">Preço realizado (R$/saca)</label><input id="nc-preco" type="number" step="0.01" min="0"></div>
+    </div>
+    <p class="dica">Informe a umidade do romaneio. Sem ela, a produtividade não é corrigida para a
+      base de comercialização e sai maior do que é.</p>
+    <div id="nc-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="salvarColheita(${safraId})">Registrar</button>`);
+}
+
+async function salvarColheita(safraId){
+  const corpo = {producao_kg: numero('nc-producao'), umidade_pct: numero('nc-umidade'),
+                 data_colheita: valor('nc-colheita') || null, preco_realizado_saca: numero('nc-preco')};
+  if (corpo.producao_kg === null){
+    document.getElementById('nc-msg').innerHTML = '<div class="aviso er">Informe a produção colhida.</div>'; return;
+  }
+  try{
+    await api(`/api/v1/safras/${safraId}`, {method:'PUT', body: JSON.stringify(corpo)});
+    fecharModal(); abrirSafra(safraId);
+  }catch(e){ document.getElementById('nc-msg').innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+/* ═══ Comparativo controle × regenerativo ══════════════════════════════════ */
+async function carregarComparativo(){
+  preencherFiltrosSafra();
+  const el = document.getElementById('painel-comparativo');
+  const q = new URLSearchParams();
+  if (valor('comp-safra')) q.set('safra', valor('comp-safra'));
+  if (valor('comp-cultura')) q.set('cultura', valor('comp-cultura'));
+  el.innerHTML = '<div class="carregando">Carregando…</div>';
+  try{
+    const d = await api('/api/v1/safras/comparativo/manejo' + (q.toString() ? '?'+q : ''));
+    if (d.comparavel === false){
+      el.innerHTML = `<div class="carta"><div class="vazio">${esc(d.motivo)}</div></div>`;
+      return;
+    }
+    const c = d.comparacao;
+    el.innerHTML = `
+      <div class="carta" style="margin-bottom:1rem">
+        <h2 style="margin-bottom:.4rem">Leitura</h2>
+        <p style="font-size:1.05rem;margin:0">${esc(c.leitura)}</p>
+        <p class="dica" style="margin-top:.6rem">${esc(c.aviso)}</p>
+      </div>
+      <div class="grade g2">
+        ${blocoManejo('Área controle (convencional)', d.controle, '')}
+        ${blocoManejo('Área sob protocolo regenerativo', d.regenerativo, 'bom')}
+      </div>
+      <h2 style="margin:1.4rem 0 .7rem">Diferença</h2>
+      <div class="carta rolagem"><table><thead><tr>
+          <th>Indicador</th><th class="dir">Controle</th><th class="dir">Regenerativo</th><th class="dir">Diferença</th>
+        </tr></thead><tbody>
+        ${linhaDif('Produtividade (sc/ha)', c.produtividade_sacas_ha, '')}
+        ${linhaDif('Custo por hectare (R$)', c.custo_ha, '')}
+        ${linhaDif('Margem por hectare (R$)', c.margem_ha, '')}
+      </tbody></table></div>`;
+  }catch(e){ erro('painel-comparativo', e); }
+}
+
+function blocoManejo(titulo, g, classe){
+  return `<div class="carta">
+    <h3 style="margin-bottom:.5rem">${esc(titulo)}</h3>
+    <table><tbody>
+      <tr><td>Talhões</td><td class="dir num">${g.talhoes || 0}</td></tr>
+      <tr><td>Área</td><td class="dir num">${fmtHa(g.area_ha)}</td></tr>
+      <tr><td>Produtividade</td><td class="dir num">${g.produtividade?.sacas_ha ? fmtN(g.produtividade.sacas_ha) + ' sc/ha' : '—'}</td></tr>
+      <tr><td>Custo por hectare</td><td class="dir num">${fmtR$(g.custo_ha)}</td></tr>
+      <tr><td><b>Margem por hectare</b></td><td class="dir num"><b>${fmtR$(g.margem_ha)}</b></td></tr>
+    </tbody></table></div>`;
+}
+
+function linhaDif(rot, d, un){
+  if (!d || !d.disponivel) return `<tr><td>${esc(rot)}</td><td colspan="3" class="dica">sem dado suficiente</td></tr>`;
+  return `<tr><td>${esc(rot)}</td>
+    <td class="dir num">${fmtN(d.referencia)}</td>
+    <td class="dir num">${fmtN(d.atual)}</td>
+    <td class="dir num">${sinal(d.diferenca)}${d.variacao_pct !== null ? ` <span class="dica">(${fmtN(d.variacao_pct,1)}%)</span>` : ''}</td></tr>`;
+}
+
+/* ═══ Equipe ═══════════════════════════════════════════════════════════════ */
+async function carregarEquipe(){
+  try{
+    const d = await api('/api/v1/associados/equipe/membros');
+    document.getElementById('lista-membros').innerHTML = d.membros.length ? `<table><thead><tr>
+        <th>E-mail</th><th>Perfil</th><th>Alcance</th><th></th>
+      </tr></thead><tbody>${d.membros.map(m => `<tr>
+        <td>${esc(m.email || m.usuario_id)}</td>
+        <td>${esc(m.papel_rotulo)}</td>
+        <td>${m.associado_id ? 'só o associado #' + m.associado_id : 'carteira inteira'}</td>
+        <td><button class="b mini sec" onclick="removerMembro('${esc(m.usuario_id)}')">Retirar acesso</button></td>
+      </tr>`).join('')}</tbody></table>` : '<div class="vazio">Nenhum membro além de você.</div>';
+
+    document.getElementById('matriz-papeis').innerHTML = `<table><thead><tr>
+        <th>Perfil</th><th>Alcance</th><th>Pode</th>
+      </tr></thead><tbody>${d.papeis.map(p => `<tr>
+        <td><b>${esc(p.rotulo)}</b></td>
+        <td>${p.escopo === 'todos' ? 'carteira inteira' : 'só o próprio cadastro'}</td>
+        <td class="dica">${p.acoes.map(a => esc(a.replace(/_/g,' '))).join(' · ')}</td>
+      </tr>`).join('')}</tbody></table>
+      <p class="dica" style="margin-top:.7rem">O técnico de campo não alcança o módulo
+        financeiro/tributário. O auditor lê tudo, mas não altera dado do associado.</p>`;
+  }catch(e){ erro('lista-membros', e); }
+}
+
+function abrirNovoMembro(){
+  abrirModal('Dar acesso', `
+    <p class="dica">A pessoa precisa ter criado a conta primeiro, na tela de login.</p>
+    <div class="campo"><label for="nm-email">E-mail *</label><input id="nm-email" type="email"></div>
+    <div class="campo"><label for="nm-papel">Perfil *</label>
+      <select id="nm-papel" onchange="document.getElementById('campo-nm-assoc').style.display = this.value === 'associado' ? '' : 'none'">
+        <option value="tecnico">Técnico de campo</option>
+        <option value="gestor">Gestor Primato</option>
+        <option value="auditor">Auditor</option>
+        <option value="associado">Associado</option>
+      </select></div>
+    <div class="campo" id="campo-nm-assoc" style="display:none">
+      <label for="nm-assoc">Associado (obrigatório para o perfil Associado)</label>
+      <input id="nm-assoc" type="number" placeholder="Número do associado no sistema"></div>
+    <div id="nm-msg"></div>`,
+    `<button class="b sec" onclick="fecharModal()">Cancelar</button>
+     <button class="b" onclick="salvarMembro()">Liberar acesso</button>`);
+}
+
+async function salvarMembro(){
+  const corpo = {email: valor('nm-email'), papel: valor('nm-papel'),
+                 associado_id: numero('nm-assoc')};
+  try{
+    await api('/api/v1/associados/equipe/membros', {method:'POST', body: JSON.stringify(corpo)});
+    fecharModal(); carregarEquipe();
+  }catch(e){ document.getElementById('nm-msg').innerHTML = `<div class="aviso er">${esc(e.message)}</div>`; }
+}
+
+async function removerMembro(usuarioId){
+  if (!confirm('Retirar o acesso desta pessoa?')) return;
+  try{ await api(`/api/v1/associados/equipe/membros/${usuarioId}`, {method:'DELETE'}); carregarEquipe(); }
+  catch(e){ alert(e.message); }
+}
+
+/* ---------- Início ---------- */
+(async function(){
+  carregarSessao();
+  if (SESSAO.token){
+    if (SESSAO.expiraEm && Date.now() > SESSAO.expiraEm - 60000) await renovarSessao();
+    if (SESSAO.token){ await entrarNaApp(); return; }
+  }
+  exigirLogin('');
+})();
+</script>
+</body>
+</html>

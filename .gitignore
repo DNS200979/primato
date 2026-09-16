@@ -1,0 +1,24 @@
+# Segredos — NUNCA versionar
+.env
+.env.*
+!.env.example
+*.key
+*-key.json
+
+# Documentos com dado de associado (LGPD)
+Docs_teste/
+scratchpad/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+
+# Vercel / editores
+.vercel
+.DS_Store
+*.swp
+_*.js

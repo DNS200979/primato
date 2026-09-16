@@ -1,0 +1,41 @@
+# API
+fastapi==0.138.2
+uvicorn==0.49.0
+python-multipart==0.0.32
+python-dotenv==1.2.2
+pydantic==2.13.3
+requests==2.33.1
+
+# Banco / Auth / Storage (Supabase)
+supabase==2.29.0
+httpx==0.28.1
+
+# PDF (proposta CRVE, contrato LV2) e leitura de texto de PDF (heurística)
+fpdf2==2.8.7
+pypdf==6.14.2
+
+# Verificação documental por IA — Claude extrai os campos; as regras decidem
+# (app/services/verificacao_documental_ia.py). SDK 1.x (usa `fallbacks`).
+anthropic==1.0.0
+
+# Geometria do imóvel (KML/Shapefile) + MapBiomas/IBGE via Google Earth Engine
+pyshp==3.1.6
+earthengine-api==1.7.40
+google-api-core==2.34.0
+google-api-python-client==2.198.0
+googleapis-common-protos==1.75.1
+google-auth==2.56.3
+google-auth-httplib2==0.4.1
+google-cloud-core==2.6.1
+google-cloud-storage==3.13.1
+google-crc32c==1.8.0
+google-resumable-media==2.10.1
+httplib2==0.32.0
+protobuf==7.35.1
+proto-plus==1.28.3
+pyasn1==0.6.4
+pyasn1_modules==0.4.2
+uritemplate==4.2.0
+
+# Testes (tests/README.md)
+pytest==9.1.1

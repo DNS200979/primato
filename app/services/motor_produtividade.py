@@ -89,6 +89,18 @@ def _f(v) -> Optional[float]:
     return n if n == n and n not in (float("inf"), float("-inf")) else None
 
 
+def _br(n: float, casas: int = 2) -> str:
+    """
+    Número no formato brasileiro: 1234.5 → "1.234,50".
+
+    Aplicar SÓ ao número, nunca à frase montada. A troca de separadores é cega
+    e, solta sobre um texto, come a pontuação — o ponto final da frase virava
+    vírgula. Apareceu no primeiro teste em produção.
+    """
+    s = f"{n:,.{casas}f}"
+    return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 def cultura_meta(cultura: Optional[str]) -> dict:
     return CULTURAS.get((cultura or "").strip().lower(),
                         {"rotulo": cultura or "—", "saca_kg": 60.0,
@@ -331,14 +343,13 @@ def comparar_manejo(controle: dict, regenerativo: dict) -> dict:
     if margem.get("disponivel"):
         d = margem["diferenca"]
         if d > 0:
-            leitura = (f"A área regenerativa entregou R$ {abs(d):,.2f}/ha a mais "
+            leitura = (f"A área regenerativa entregou R$ {_br(abs(d))}/ha a mais "
                        f"de margem que a área controle.")
         elif d < 0:
-            leitura = (f"A área regenerativa ficou R$ {abs(d):,.2f}/ha abaixo da "
+            leitura = (f"A área regenerativa ficou R$ {_br(abs(d))}/ha abaixo da "
                        f"área controle em margem.")
         else:
             leitura = "As duas áreas empataram em margem por hectare."
-        leitura = leitura.replace(",", "X").replace(".", ",").replace("X", ".")
     elif prod.get("disponivel"):
         d = prod["diferenca"]
         sinal = "acima" if d > 0 else ("abaixo" if d < 0 else "igual")

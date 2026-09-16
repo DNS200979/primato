@@ -153,6 +153,19 @@ def test_regenerativo_com_menos_saca_mas_mais_margem_e_lido_como_ganho():
     assert "a mais de margem" in c["leitura"]
 
 
+def test_numero_em_formato_brasileiro_nao_come_a_pontuacao():
+    """
+    Regressão do defeito achado no primeiro teste em produção (16/09/2026): a
+    troca de separadores era aplicada à FRASE inteira, e o ponto final virava
+    vírgula — "…que a área controle,". Formatar só o número.
+    """
+    assert mp._br(1234.5) == "1.234,50"
+    assert mp._br(374.49) == "374,49"
+    c = mp.comparar_manejo(_res(60, 4000), _res(58, 3000))
+    assert c["leitura"].endswith(".")
+    assert "R$ 740,00/ha" in c["leitura"] or "R$ " in c["leitura"]
+
+
 def test_comparacao_de_manejo_sem_colheita_nao_conclui_nada():
     vazio = mp.resultado_safra(cultura="soja", area_ha=10)
     c = mp.comparar_manejo(vazio, vazio)
